@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="si">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090b12">
+  <title>MoviesubLK Player</title>
+  <style>
+    :root { color-scheme: dark; --bg:#090b12; --panel:#141925; --line:#273044; --text:#f5f7fb; --muted:#a8b1c2; --accent:#e8b84b; }
+    * { box-sizing:border-box }
+    body { margin:0; min-height:100vh; background:radial-gradient(ellipse at top,#1b2334 0,#090b12 58%); color:var(--text); font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; display:grid; place-items:center; padding:22px; }
+    .wrap { width:min(100%,980px); }
+    .brand { display:flex; align-items:center; gap:11px; margin:0 0 15px; }
+    .logo { width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,#f4d477,#b77b19);color:#17120a;font-weight:900;font-size:20px;box-shadow:0 8px 28px #d89e3030; }
+    .brand strong { display:block;letter-spacing:.3px;font-size:17px }
+    .brand small { color:var(--muted) }
+    .player { overflow:hidden;background:#000;border:1px solid #30384a;border-radius:18px;box-shadow:0 24px 80px #0009; }
+    video { display:block;width:100%;aspect-ratio:16/9;background:#000; }
+    .below { padding:18px;background:linear-gradient(180deg,#171e2b,#111722);border-top:1px solid #283143; }
+    .title { font-size:18px;font-weight:700;margin:0 0 5px;overflow-wrap:anywhere; }
+    .hint { color:var(--muted);font-size:13px;margin:0; }
+    .status { margin-top:14px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#0d121c;color:#c8d0de;font-size:13px; }
+    .status.error { border-color:#8d3e46;color:#ffb9bd;background:#261317; }
+    .tools { display:flex;flex-wrap:wrap;gap:9px;margin-top:13px; }
+    button { cursor:pointer;border:1px solid #414c63;border-radius:10px;background:#202a3b;color:#fff;padding:9px 13px;font-weight:650; }
+    button.primary { background:var(--accent);color:#17120a;border-color:var(--accent); }
+    button:disabled { opacity:.45;cursor:not-allowed; }
+    .foot { text-align:center;color:#788397;font-size:12px;margin-top:14px; }
+    @media(max-width:560px){ body{padding:12px}.player{border-radius:12px}.below{padding:13px}.title{font-size:16px} }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="brand">
+      <div class="logo">M</div>
+      <div><strong>MoviesubLK Player</strong><small>Private video streaming</small></div>
+    </header>
+
+    <section class="player" aria-label="Video player">
+      <video id="video" controls playsinline preload="metadata" controlsList="nodownload">
+        Your browser does not support HTML5 video.
+      </video>
+      <div class="below">
+        <h1 class="title" id="videoTitle">MoviesubLK Video Player</h1>
+        <p class="hint">වීඩියෝව Play කිරීමට පහත Player Controls භාවිතා කරන්න.</p>
+        <div class="status" id="status" role="status">Video link එකක් ලබාදී නැහැ. Demo එකෙන් Player එක පරීක්ෂා කරන්න.</div>
+        <div class="tools">
+          <button class="primary" id="demoBtn" type="button">▶ Demo Video එක Play කරන්න</button>
+          <button id="reloadBtn" type="button">↻ නැවත Load කරන්න</button>
+        </div>
+      </div>
+    </section>
+    <p class="foot">MoviesubLK • HTML5 Player</p>
+  </main>
+
+  <script>
+    const video = document.getElementById('video');
+    const statusBox = document.getElementById('status');
+    const titleBox = document.getElementById('videoTitle');
+    const demoUrl = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
+
+    function setStatus(message, isError = false) {
+      statusBox.textContent = message;
+      statusBox.classList.toggle('error', isError);
+    }
+
+    function loadVideo(url, title = 'MoviesubLK Video Player') {
+      if (!url) {
+        setStatus('Video link එකක් ලබාදී නැහැ. Demo එකෙන් Player එක පරීක්ෂා කරන්න.');
+        return;
+      }
+      try {
+        const parsed = new URL(url, window.location.href);
+        if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Invalid protocol');
+        titleBox.textContent = title;
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+        video.src = parsed.href;
+        video.load();
+        setStatus('Video එක Load වෙනවා...');
+      } catch (_) {
+        setStatus('Video URL එක වැරදියි. නිවැරදි HTTP/HTTPS link එකක් ලබාදෙන්න.', true);
+      }
+    }
+
+    video.addEventListener('loadedmetadata', () => {
+      const duration = Number.isFinite(video.duration) ? Math.round(video.duration) : null;
+      setStatus(duration ? `Player සූදානම් • දිග: ${Math.floor(duration/60)}:${String(duration%60).padStart(2,'0')}` : 'Player සූදානම්.');
+    });
+    video.addEventListener('waiting', () => setStatus('Buffering... වීඩියෝව ලබාගනිමින් පවතී.'));
+    video.addEventListener('playing', () => setStatus('වීඩියෝව Play වෙනවා.'));
+    video.addEventListener('error', () => {
+      const code = video.error?.code;
+      const messages = {
+        1: 'Video loading එක නවතා ඇත.',
+        2: 'Network දෝෂයක්. Link එක හෝ Internet සම්බන්ධතාව පරීක්ෂා කරන්න.',
+        3: 'Video format එක decode කළ නොහැක.',
+        4: 'මෙම Video URL/format එක Browser එකට සහාය නොදක්වයි.'
+      };
+      setStatus(messages[code] || 'Video එක Load කළ නොහැක. URL එක පරීක්ෂා කරන්න.', true);
+    });
+
+    document.getElementById('demoBtn').addEventListener('click', () => loadVideo(demoUrl, 'Demo Video'));
+    document.getElementById('reloadBtn').addEventListener('click', () => {
+      if (video.currentSrc) { video.load(); setStatus('නැවත Load කරනවා...'); }
+      else setStatus('මුලින් Demo Video එකක් හෝ Video URL එකක් ලබාදෙන්න.');
+    });
+
+    // Supports: player.html?src=VIDEO_URL&title=VIDEO_TITLE
+    const params = new URLSearchParams(window.location.search);
+    const src = params.get('src');
+    const title = params.get('title') || 'MoviesubLK Video Player';
+    if (src) loadVideo(src, title);
+  </script>
+</body>
+</html>
